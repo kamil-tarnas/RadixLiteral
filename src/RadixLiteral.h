@@ -3,22 +3,22 @@
 #ifndef RADIX_LITERAL_H
 #define RADIX_LITERAL_H
 
-#if __cplusplus >= 201402L // if C++14
-// Relaxed limitations on constexpr functions evaluated at compile time
-#define COMPILE_TIME_SPECIFIER constexpr
-#else
-// COMPILE_TIME_SPECIFIER evaluation in compile time has some restrictions
-// TODO: Other implementation needed for literals that use letters as "digits"
-// std::enable_if_t not available, could be easily typedefed with an enabler and enable_if (I think...)
-// static_assert tests using past-10 letter-using literals will fail
-#endif // #if __cplusplus >= 201402L // if C++14
-
 // TODO: Needs to be inside the other __cplusplus #ifs (need to create a ladder)
 #if __cplusplus >= 202002L
 // C++20 speficic code
 // 1. consteval instead of COMPILE_TIME_SPECIFIER (?)
 // 2. C++20 concepts for the number of parameters in parameter pack of chars.
 #define COMPILE_TIME_SPECIFIER consteval
+#elif __cplusplus >= 201402L
+// Relaxed limitations on constexpr functions evaluated at compile time
+#define COMPILE_TIME_SPECIFIER constexpr
+// COMPILE_TIME_SPECIFIER evaluation in compile time has some restrictions
+// TODO: Other implementation needed for literals that use letters as "digits"
+// std::enable_if_t not available, could be easily typedefed with an enabler and enable_if (I think...)
+// static_assert tests using past-10 letter-using literals will fail
+#else
+#define COMPILE_TIME_SPECIFIER
+// No compile-time specifier (can this even run in C++<14? I think it can...
 #endif
 
 // Reimplement type_traits for smaller binaries size when this header is included
@@ -55,6 +55,7 @@ namespace RadixLiteral
    template<class T>
    struct enable_if<true, T> {typedef T type;};
 
+   // TODO: test how much does the binary size increase with added header type_traits
    template<bool B, class T = void>
    using enable_if_t = typename enable_if<B,T>::type;
 
@@ -129,7 +130,8 @@ COMPILE_TIME_SPECIFIER RadixLiteral::size_t operator "" _z(unsigned long long ar
 // Need to just replace the hardcoded number in literal suffix and implementation
 // Introduce macro for literal replacing and second template argument for the numeric system?
 // Introduce the least amount of macro substitution - only in operator""() implementation?
-
+// Template even needed? Arg will always be a unsigned? How to deal with very large numbers?
+// TODO: C++14 do the constexpr loop for possibly better performance and to avoid recursion problems
 template<typename Data> // TODO: Artificial constrains on the types that this template could be instantiated with?
 COMPILE_TIME_SPECIFIER Data pow(Data arg, int power)
 {  
@@ -155,7 +157,8 @@ concept IsNotEmptyCharacterParameterPack = (sizeof...(chars) > 0);
 
 //https://stackoverflow.com/questions/56062683/variadic-template-ambiguity-empty-parameter-pack
 //std::enable_if_t<std::is_integral<T>::value>* = nullptr
-template<unsigned base, char c, IsNotEmptyCharacterParameterPack... tail> //std::enable_if<(sizeof...(tail) > 0)>* = nullptr> // TODO: Analyze, template template argument?
+template<unsigned base, char c, char... tail> //std::enable_if<(sizeof...(tail) > 0)>* = nullptr> // TODO: Analyze, template template argument?
+requires IsNotEmptyCharacterParameterPack<tail...>
 //typename std::enable_if<(sizeof...(tail) > 0), int>::type // TODO: Will that return a COMPILE_TIME_SPECIFIER qualified int 'COMPILE_TIME_SPECIFIER int'?
 COMPILE_TIME_SPECIFIER int
 bHelper()
@@ -164,6 +167,7 @@ bHelper()
    // COMPILE_TIME_SPECIFIER if (sizeof.. (tail)) > 0 call this function
    // else call <unsigned, char> bHelper
    // TODO: Assert or other check // TODO: Make a macro or a function out of the common part of the expression
+  // Yeah, make a function or something, we still need to be compatible with C++11... constexpr 'if' is available starting from C++17
    return c > '9' ?
 	    (c < 'Z' ?
               (c - CHAR_TO_INT_LOWER_CASE_OFFSET) * pow(base, sizeof...(tail)) + bHelper<base, tail...>() :

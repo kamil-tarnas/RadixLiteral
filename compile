@@ -31,4 +31,4 @@ cpp14="c++14"
 
 find test/ -name "$outname*" | xargs g++ -o $outname$cpp20 $debug -std=$cpp20 -fconcepts
 find test/ -name "$outname*" | xargs g++ -o $outname$cpp14 $debug -std=$cpp14
-#find test/ -name "$outname*" | xargs clang++ -o $outname$clang -std=c++14 -Wno-unused-value
+find test/ -name "$outname*" | xargs clang++ -o $outname$clang -std=c++14 -Wno-unused-value
