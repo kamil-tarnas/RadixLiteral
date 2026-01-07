@@ -3,13 +3,7 @@
 #ifndef RADIX_LITERAL_H
 #define RADIX_LITERAL_H
 
-// Put an error in case it's attempted to compile with C++ standard older than C++11
-// Template parameters pack, user-defined literals and other features were introduced in C++11
-#if __cplusplus < 201103L
-#error "This library requires C++11 or newer"
-#endif
-
-//TODO: we can prevent further parsing by:
+//TODO: we can prevent further parsing by (including the MSVC compiler):
 /*
 #if (defined(_MSC_VER) && _MSVC_LANG < 201103L) || \
     (!defined(_MSC_VER) && __cplusplus < 201103L)
@@ -22,6 +16,12 @@
 
 #endif
 */
+
+// Put an error and stop parsing in case it's attempted to compile with C++ standard older than C++11
+// Template parameters pack, user-defined literals and other features were introduced in C++11
+#if __cplusplus < 201103L
+#error "This library requires C++11 or newer"
+#else
 
 // TODO: Needs to be inside the other __cplusplus #ifs (need to create a ladder)
 #if __cplusplus >= 202002L
@@ -341,4 +341,5 @@ int bHelper(const char* arg, RadixLiteral::size_t numeralSystem)
 //	return b15Helper(arg); // TODO: Take base numeral value of numeral system
 //}
 
+#endif // #if __cplusplus < 201103L
 #endif // #ifndef RADIX_LITERAL_H
